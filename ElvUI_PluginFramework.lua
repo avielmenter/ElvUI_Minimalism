@@ -201,7 +201,6 @@ function Minimalism:InsertOptions()
 				type = "toggle",
 				name = L["Show Tracking Only On Hover"],
 				width = "double",
-				hidden = WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE,
 				get = function(info)
 					return E.db.Minimalism.HideTracking
 				end,
@@ -216,9 +215,9 @@ function Minimalism:InsertOptions()
 end
 
 function showOrFadeFrame(frame, faderOptions)
-	if (not faderOptions.UseFader) or faderOptions.IsVisible then
+	if (not faderOptions.UseFader) then
 		frame:Show()
-	else
+	elseif (not faderOptions.IsVisible) then
 		UIFrameFadeIn(frame, faderOptions.Smooth, faderOptions.MinAlpha, faderOptions.MaxAlpha, faderOptions.Delay)
 	end
 
@@ -226,9 +225,9 @@ function showOrFadeFrame(frame, faderOptions)
 end
 
 function hideOrFadeFrame(frame, faderOptions)
-	if (not faderOptions.UseFader) or (not faderOptions.IsVisible) then
+	if (not faderOptions.UseFader) then
 		frame:Hide()
-	else
+	elseif faderOptions.IsVisible then
 		UIFrameFadeOut(frame, faderOptions.Smooth, faderOptions.MaxAlpha, faderOptions.MinAlpha, faderOptions.Delay)
 	end
 
@@ -257,7 +256,7 @@ end
 function UpdateMinimapButtonVisibility()
 	local LFGButton = _G["LFGMinimapFrame"]
 	local ExpansionButton = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) and _G["ExpansionLandingPageMinimapButton"] or nil
-	local TrackingButton = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) and _G.MinimapCluster.Tracking or nil
+	local TrackingButton = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) and _G.MinimapCluster.Tracking or _G["MiniMapTrackingIcon"]
 
 	local isMouseOver = _G["Minimap"]:IsMouseOver()
 
