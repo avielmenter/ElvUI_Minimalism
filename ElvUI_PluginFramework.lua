@@ -10,13 +10,116 @@ local EP = LibStub("LibElvUIPlugin-1.0") --We can use this to automatically inse
 local addonName, addonTable = ... --See http://www.wowinterface.com/forums/showthread.php?t=51502&p=304704&postcount=2
 
 --Default options
+
+local DEFAULT_FADER_OPTIONS = {
+	["UseFader"] = false,
+	["Delay"] = 0,
+	["Smooth"] = 0.33, -- amount of time the fade takes, for some reason
+	["MaxAlpha"] = 1,
+	["MinAlpha"] = 0
+}
+
 P["Minimalism"] = {
 	["HideBuffsInCombat"] = false,
 	["HideDebuffsInCombat"] = false,
+	["BuffsFader"] = DEFAULT_FADER_OPTIONS,
 	["HideLFGButton"] = false,
-	["HideCampaignButton"] = false,
-	["HideTracker"] = false
+	["HideExpansionButton"] = false,
+	["HideTracking"] = false,
+	["MinimapButtonsFader"] = DEFAULT_FADER_OPTIONS,
 }
+
+function faderSection(sectionOrder, sectionName, onUpdate)
+	local section = {
+		order = sectionOrder,
+		type = "group",
+		name = "Fader",
+		inline = true,
+		args = {
+			UseFader = {
+				order = 100,
+				type = "toggle",
+				name = "Use Fader?",
+				width = "full",
+				get = function(info)
+					return E.db.Minimalism[sectionName].UseFader
+				end,
+				set = function(info, value)
+					E.db.Minimalism[sectionName].UseFader = value
+
+					local section = E.Options.args.Minimalism.args[sectionName]
+					
+					if section ~= nil then
+						section.args.Delay.hidden = not value
+						section.args.MinAlpha.hidden = not value
+						section.args.MaxAlpha.hidden = not value
+					end
+				end
+			},
+			Delay = {
+				order = 110,
+				type = "range",
+				name = L["Fade Out Delay"],
+				softMax = 3,
+				hidden = not E.db.Minimalism[sectionName].UseFader,
+				get = function(info)
+					return E.db.Minimalism[sectionName].Delay
+				end,
+				set = function(info, value)
+					E.db.Minimalism[sectionName].Delay = value
+					onUpdate()
+				end
+			},
+			Smooth = {
+				order = 115,
+				type = "range",
+				name = L["Smooth"],
+				min = 0,
+				softMax = 1,
+				hidden = not E.db.Minimalism[sectionName].UseFader,
+				get = function(info)
+					return E.db.Minimalism[sectionName].Smooth
+				end,
+				set = function(info, value)
+					E.db.Minimalism[sectionName].Smooth = value
+					onUpdate()
+				end
+			},
+			MinAlpha = {
+				order = 120,
+				type = "range",
+				name = L["Min Alpha"],
+				max = 1,
+				min = 0,
+				hidden = not E.db.Minimalism[sectionName].UseFader,
+				get = function(info)
+					return E.db.Minimalism[sectionName].MinAlpha
+				end,
+				set = function(info, value)
+					E.db.Minimalism[sectionName].MinAlpha = value
+					onUpdate()
+				end
+			},
+			MaxAlpha = {
+				order = 130,
+				type = "range",
+				name = L["Max Alpha"],
+				max = 1,
+				min = 0,
+				hidden = not E.db.Minimalism[sectionName].UseFader,
+				get = function(info)
+					return E.db.Minimalism[sectionName].MaxAlpha
+				end,
+				set = function(info, value)
+					E.db.Minimalism[sectionName].MaxAlpha = value
+					onUpdate()
+				end
+			},
+		}
+	}
+
+	return section
+end
 
 --This function inserts our GUI table into the ElvUI Config. You can read about AceConfig here: http://www.wowace.com/addons/ace3/pages/ace-config-3-0-options-tables/
 function Minimalism:InsertOptions()
@@ -28,12 +131,12 @@ function Minimalism:InsertOptions()
 			BuffsOptions = {
 				order = 100,
 				type = "header",
-				name = "Buffs and Debuffs",
+				name = L["Buffs and Debuffs"],
 			},
 			HideBuffsInCombat = {
 				order = 110,
 				type = "toggle",
-				name = "Hide Buffs In Combat",
+				name = L["Hide Buffs In Combat"],
 				get = function(info)
 					return E.db.Minimalism.HideBuffsInCombat
 				end,
@@ -45,7 +148,7 @@ function Minimalism:InsertOptions()
 			HideDebuffsInCombat = {
 				order = 120,
 				type = "toggle",
-				name = "Hide Debuffs In Combat",
+				name = L["Hide Debuffs In Combat"],
 				get = function(info)
 					return E.db.Minimalism.HideDebuffsInCombat
 				end,
@@ -54,15 +157,23 @@ function Minimalism:InsertOptions()
 					Minimalism:UpdateCombatVisibility() --We changed a setting, call our Update function
 				end,
 			},
+			BuffsFader = faderSection(130, "BuffsFader", function() Minimalism:UpdateCombatVisibility() end),
+			BuffsSpacer = {
+				order = 199,
+				type = "description",
+				name = "\n\n\n",
+				width = "full"
+			},
 			CampaignButtonOptions = {
 				order = 200,
 				type = "header",
-				name = "Minimap Buttons"
+				name = L["Minimap Buttons"]
 			},
 			HideLFGButton = {
 				order = 210,
 				type = "toggle",
-				name = "Show LFG Icon Only On Hover",
+				name = L["Show LFG Icon Only On Hover"],
+				width = "double",
 				get = function(info)
 					return E.db.Minimalism.HideLFGButton
 				end,
@@ -71,35 +182,57 @@ function Minimalism:InsertOptions()
 					UpdateMinimapButtonVisibility()
 				end
 			},
-			HideCampaignButton = {
+			HideExpansionButton = {
 				order = 220,
 				type = "toggle",
-				name = "Show Campaign Button Only On Hover",
-				width = "full",
+				name = L["Show Expansion Button Only On Hover"],
+				width = "double",
 				hidden = WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE,
 				get = function(info)
-					return E.db.Minimalism.HideCampaignButton
+					return E.db.Minimalism.HideExpansionButton
 				end,
 				set = function(info, value)
-					E.db.Minimalism.HideCampaignButton = value
+					E.db.Minimalism.HideExpansionButton = value
 					UpdateMinimapButtonVisibility()
 				end
 			},
-			HideTracker = {
+			HideTracking = {
 				order = 230,
 				type = "toggle",
-				name = "Show Tracker Only On Hover",
+				name = L["Show Tracking Only On Hover"],
+				width = "double",
 				hidden = WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE,
 				get = function(info)
-					return E.db.Minimalism.HideTracker
+					return E.db.Minimalism.HideTracking
 				end,
 				set = function(info, value)
-					E.db.Minimalism.HideTracker = value
+					E.db.Minimalism.HideTracking = value
 					UpdateMinimapButtonVisibility()
 				end
-			}
+			},
+			MinimapButtonsFader = faderSection(240, "MinimapButtonsFader", UpdateMinimapButtonVisibility);
 		}
 	}
+end
+
+function showOrFadeFrame(frame, faderOptions)
+	if (not faderOptions.UseFader) or faderOptions.IsVisible then
+		frame:Show()
+	else
+		UIFrameFadeIn(frame, faderOptions.Smooth, faderOptions.MinAlpha, faderOptions.MaxAlpha, faderOptions.Delay)
+	end
+
+	faderOptions.IsVisible = true
+end
+
+function hideOrFadeFrame(frame, faderOptions)
+	if (not faderOptions.UseFader) or (not faderOptions.IsVisible) then
+		frame:Hide()
+	else
+		UIFrameFadeOut(frame, faderOptions.Smooth, faderOptions.MaxAlpha, faderOptions.MinAlpha, faderOptions.Delay)
+	end
+
+	faderOptions.IsVisible = false
 end
 
 function Minimalism:UpdateCombatVisibility()
@@ -109,36 +242,58 @@ function Minimalism:UpdateCombatVisibility()
 	local debuffsFrame = _G["ElvUIPlayerDebuffs"]
 	
 	if E.db.Minimalism.HideBuffsInCombat and inCombat then
-		buffsFrame:Hide()
+		hideOrFadeFrame(buffsFrame, E.db.Minimalism.BuffsFader)
 	else
-		buffsFrame:Show()
+		showOrFadeFrame(buffsFrame, E.db.Minimalism.BuffsFader)
 	end
 
 	if E.db.Minimalism.HideDebuffsInCombat and inCombat then 
-		debuffsFrame:Hide()
+		hideOrFadeFrame(debuffsFrame, E.db.Minimalism.BuffsFader)
 	else
-		debuffsFrame:Show()
+		showOrFadeFrame(debuffsFrame, E.db.Minimalism.BuffsFader)
 	end
 end
 
 function UpdateMinimapButtonVisibility()
 	local LFGButton = _G["LFGMinimapFrame"]
+	local ExpansionButton = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) and _G["ExpansionLandingPageMinimapButton"] or nil
+	local TrackingButton = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) and _G.MinimapCluster.Tracking or nil
+
 	local isMouseOver = _G["Minimap"]:IsMouseOver()
 
 	if LFGButton ~= nil then
 		if E.db.Minimalism.HideLFGButton and not isMouseOver then
-			LFGButton:Hide()
+			hideOrFadeFrame(LFGButton, E.db.Minimalism.MinimapButtonsFader)
 		else
-			LFGButton:Show()
+			showOrFadeFrame(LFGButton, E.db.Minimalism.MinimapButtonsFader)
 		end
 	end
-	
+
+	if ExpansionButton ~= nil then
+		if E.db.Minimalism.HideExpansionButton and not isMouseOver then
+			hideOrFadeFrame(ExpansionButton, E.db.Minimalism.MinimapButtonsFader)
+		else
+			showOrFadeFrame(ExpansionButton, E.db.Minimalism.MinimapButtonsFader)
+		end
+	end
+
+	if TrackingButton ~= nil then
+		if E.db.Minimalism.HideTracking and not isMouseOver then
+			hideOrFadeFrame(TrackingButton, E.db.Minimalism.MinimapButtonsFader)
+		else
+			showOrFadeFrame(TrackingButton, E.db.Minimalism.MinimapButtonsFader)
+		end
+	end
 end
 
+function Minimalism:OnEnteringWorld()
+	UpdateMinimapButtonVisibility()
+end
 
 function Minimalism:Initialize()
 	self:RegisterEvent("PLAYER_REGEN_ENABLED", "UpdateCombatVisibility")
-	self:RegisterEvent("PLAYER_REGEN_DISABLED", "UpdateCombatVisibility")	
+	self:RegisterEvent("PLAYER_REGEN_DISABLED", "UpdateCombatVisibility")
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnEnteringWorld")			-- needed because some elements we might want to hide load after this function is called
 
 	_G["Minimap"]:HookScript("OnEnter", UpdateMinimapButtonVisibility)
 	_G["Minimap"]:HookScript("OnLeave", UpdateMinimapButtonVisibility)
