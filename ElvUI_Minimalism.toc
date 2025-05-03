@@ -1,0 +1,8 @@
+## Interface: 11150
+## Author: Avi
+## Version: 0.1
+## Title: |cff1784d1ElvUI|r |cff00b3ffMinimalism|r
+## Notes: Hide certain UI elements when not in use
+## RequiredDeps: ElvUI
+
+ElvUI_PluginFramework.lua
