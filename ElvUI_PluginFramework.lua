@@ -29,8 +29,10 @@ P["Minimalism"] = {
 	["MinimapButtonsFader"] = DEFAULT_FADER_OPTIONS,
 }
 
-function faderSection(sectionOrder, sectionName, onUpdate)
-	local section = {
+--Options GUI
+
+local function faderSection(sectionOrder, sectionName, onUpdate)
+	return {
 		order = sectionOrder,
 		type = "group",
 		name = "Fader",
@@ -117,8 +119,6 @@ function faderSection(sectionOrder, sectionName, onUpdate)
 			},
 		}
 	}
-
-	return section
 end
 
 --This function inserts our GUI table into the ElvUI Config. You can read about AceConfig here: http://www.wowace.com/addons/ace3/pages/ace-config-3-0-options-tables/
@@ -214,7 +214,9 @@ function Minimalism:InsertOptions()
 	}
 end
 
-function showOrFadeFrame(frame, faderOptions)
+--Frame Visibility Logic
+
+local function showOrFadeFrame(frame, faderOptions)
 	if (not faderOptions.UseFader) then
 		frame:Show()
 	elseif (not faderOptions.IsVisible) then
@@ -224,7 +226,7 @@ function showOrFadeFrame(frame, faderOptions)
 	faderOptions.IsVisible = true
 end
 
-function hideOrFadeFrame(frame, faderOptions)
+local function hideOrFadeFrame(frame, faderOptions)
 	if (not faderOptions.UseFader) then
 		frame:Hide()
 	elseif faderOptions.IsVisible then
@@ -234,23 +236,26 @@ function hideOrFadeFrame(frame, faderOptions)
 	faderOptions.IsVisible = false
 end
 
+local function setFrameVisibility(frame, shouldHide, fader)
+	if (frame ~= nil) then
+		if shouldHide then
+			hideOrFadeFrame(frame, fader)
+		else
+			showOrFadeFrame(frame, fader)
+		end
+	end
+end
+
+-- Event Handling
+
 function Minimalism:UpdateCombatVisibility()
 	local inCombat = UnitAffectingCombat("player")
 
 	local buffsFrame = _G["ElvUIPlayerBuffs"]
 	local debuffsFrame = _G["ElvUIPlayerDebuffs"]
-	
-	if E.db.Minimalism.HideBuffsInCombat and inCombat then
-		hideOrFadeFrame(buffsFrame, E.db.Minimalism.BuffsFader)
-	else
-		showOrFadeFrame(buffsFrame, E.db.Minimalism.BuffsFader)
-	end
 
-	if E.db.Minimalism.HideDebuffsInCombat and inCombat then 
-		hideOrFadeFrame(debuffsFrame, E.db.Minimalism.BuffsFader)
-	else
-		showOrFadeFrame(debuffsFrame, E.db.Minimalism.BuffsFader)
-	end
+	setFrameVisibility(buffsFrame, E.db.Minimalism.HideBuffsInCombat and inCombat, E.db.Minimalism.BuffsFader)
+	setFrameVisibility(debuffsFrame, E.db.Minimalism.HideDebuffsInCombat and inCombat, E.db.Minimalism.BuffsFader)
 end
 
 function UpdateMinimapButtonVisibility()
@@ -260,34 +265,16 @@ function UpdateMinimapButtonVisibility()
 
 	local isMouseOver = _G["Minimap"]:IsMouseOver()
 
-	if LFGButton ~= nil then
-		if E.db.Minimalism.HideLFGButton and not isMouseOver then
-			hideOrFadeFrame(LFGButton, E.db.Minimalism.MinimapButtonsFader)
-		else
-			showOrFadeFrame(LFGButton, E.db.Minimalism.MinimapButtonsFader)
-		end
-	end
-
-	if ExpansionButton ~= nil then
-		if E.db.Minimalism.HideExpansionButton and not isMouseOver then
-			hideOrFadeFrame(ExpansionButton, E.db.Minimalism.MinimapButtonsFader)
-		else
-			showOrFadeFrame(ExpansionButton, E.db.Minimalism.MinimapButtonsFader)
-		end
-	end
-
-	if TrackingButton ~= nil then
-		if E.db.Minimalism.HideTracking and not isMouseOver then
-			hideOrFadeFrame(TrackingButton, E.db.Minimalism.MinimapButtonsFader)
-		else
-			showOrFadeFrame(TrackingButton, E.db.Minimalism.MinimapButtonsFader)
-		end
-	end
+	setFrameVisibility(LFGButton, E.db.Minimalism.HideLFGButton and not isMouseOver, E.db.Minimalism.MinimapButtonsFader)
+	setFrameVisibility(ExpansionButton, E.db.Minimalism.HideExpansionButton and not isMouseOver, E.db.Minimalism.MinimapButtonsFader)
+	setFrameVisibility(TrackingButton, E.db.Minimalism.HideTracking and not isMouseOver, E.db.Minimalism.MinimapButtonsFader)
 end
 
 function Minimalism:OnEnteringWorld()
 	UpdateMinimapButtonVisibility()
 end
+
+--Initialization
 
 function Minimalism:Initialize()
 	self:RegisterEvent("PLAYER_REGEN_ENABLED", "UpdateCombatVisibility")
