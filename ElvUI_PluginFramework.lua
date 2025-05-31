@@ -279,6 +279,7 @@ end
 function Minimalism:Initialize()
 	self:RegisterEvent("PLAYER_REGEN_ENABLED", "UpdateCombatVisibility")
 	self:RegisterEvent("PLAYER_REGEN_DISABLED", "UpdateCombatVisibility")
+	self:RegisterEvent("UNIT_AURA", "UpdateCombatVisibility")				-- otherwise buff/debuff frames will show if we get a buff or debuff for the first time in combat
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnEnteringWorld")			-- needed because some elements we might want to hide load after this function is called
 
 	_G["Minimap"]:HookScript("OnEnter", UpdateMinimapButtonVisibility)
