@@ -246,6 +246,30 @@ local function setFrameVisibility(frame, shouldHide, fader)
 	end
 end
 
+-- Fade Buffs and Debuffs In On Hover
+
+function Minimalism:fadeBuffsIn()
+	local buffs = _G["ElvUIPlayerBuffs"]
+	local debuffs = _G["ElvUIPlayerDebuffs"]
+	local buffsFader = E.db.Minimalism.BuffsFader
+
+	if (buffsFader.UseFader and buffsFader.IsVisible and buffs:GetAlpha() < 1) then
+		UIFrameFadeIn(buffs, buffsFader.Smooth, buffsFader.MaxAlpha, 1, 0)
+		UIFrameFadeIn(debuffs, buffsFader.Smooth, buffsFader.MaxAllpha, 1, 0)
+	end
+end
+
+function Minimalism:fadeBuffsOut()
+	local buffs = _G["ElvUIPlayerBuffs"]
+	local debuffs = _G["ElvUIPlayerDebuffs"]
+	local buffsFader = E.db.Minimalism.BuffsFader
+
+	if (buffsFader.UseFader and buffsFader.IsVisible and not buffs:IsMouseOver() and not debuffs:IsMouseOver()) then
+		UIFrameFadeOut(buffs, buffsFader.Smooth, 1, buffsFader.MaxAlpha, 0)
+		UIFrameFadeOut(debuffs, buffsFader.Smooth, 1, buffsFader.MaxAlpha, 0)
+	end
+end
+
 -- Event Handling
 
 function Minimalism:UpdateCombatVisibility()
@@ -284,6 +308,23 @@ function Minimalism:Initialize()
 
 	_G["Minimap"]:HookScript("OnEnter", UpdateMinimapButtonVisibility)
 	_G["Minimap"]:HookScript("OnLeave", UpdateMinimapButtonVisibility)
+
+	-- set initial buffs alpha
+	local buffs = _G["ElvUIPlayerBuffs"]
+	local debuffs = _G["ElvUIPlayerDebuffs"]
+	local buffsFader = E.db.Minimalism.BuffsFader
+
+	if (buffs ~= nil) then
+		buffs:SetAlpha(buffsFader.UseFader and buffsFader.MaxAlpha or 1)
+		buffs:HookScript("OnEnter", function () Minimalism:fadeBuffsIn() end)
+		buffs:HookScript("OnLeave", function () Minimalism:fadeBuffsOut() end)
+	end
+
+	if (debuffs ~= nil) then	
+		debuffs:SetAlpha(buffsFader.UseFader and buffsFader.MaxAlpha or 1)
+		debuffs:HookScript("OnEnter", function () Minimalism:fadeBuffsIn() end)
+		debuffs:HookScript("OnLeave", function () Minimalism:fadeBuffsOut() end)
+	end
 
 	Minimalism:UpdateCombatVisibility()
 	UpdateMinimapButtonVisibility()
