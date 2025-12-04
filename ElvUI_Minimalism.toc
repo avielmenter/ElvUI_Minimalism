@@ -1,4 +1,4 @@
-## Interface: 11150
+## Interface: 11270
 ## Author: Avi
 ## Version: 0.1
 ## Title: |cff1784d1ElvUI|r |cff00b3ffMinimalism|r
